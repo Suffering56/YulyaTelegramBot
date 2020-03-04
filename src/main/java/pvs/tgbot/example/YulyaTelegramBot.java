@@ -74,6 +74,9 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
 
                 sendPhotoUnsafe(photo1);
                 sendPhotoUnsafe(photo2);
+            } else {
+                sendAnswer(inputMessage.getChatId(), "Мой бот еще глуповат для общения на любые темы.");
+                //TODO: randomSticker
             }
         }
     }
