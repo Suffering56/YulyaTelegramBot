@@ -1,8 +1,11 @@
 package pvs.tgbot.example;
 
+import lombok.SneakyThrows;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -14,6 +17,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -58,7 +62,25 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
             if (txt.equals("/start")) {
                 sendAnswer(inputMessage.getChatId(), "start");
             }
+            else if (txt.equals("/img")) {
+
+                SendPhoto photo1 = new SendPhoto()
+                        .setChatId(inputMessage.getChatId())
+                        .setPhoto("ed", App.class.getResourceAsStream("/img/ed_sheeran.png"));
+
+                SendPhoto photo2 = new SendPhoto()
+                        .setChatId(inputMessage.getChatId())
+                        .setPhoto("ed", App.class.getResourceAsStream("/img/some_dog.jpg"));
+
+                sendPhotoUnsafe(photo1);
+                sendPhotoUnsafe(photo2);
+            }
         }
+    }
+
+    @SneakyThrows
+    private Message sendPhotoUnsafe(SendPhoto photo) {
+        return execute(photo);
     }
 
     private void sendAnswerCallbackQuery(String callbackQueryId, String text) {
