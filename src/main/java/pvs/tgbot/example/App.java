@@ -17,12 +17,10 @@ public class App {
 
     public static void main(String[] args) throws IOException, TelegramApiRequestException {
 
-        System.out.println("YulyaTelegramBot started 3");
+        System.out.println("YulyaTelegramBot started 6");
 
         Properties textProperties = new Properties();
-        textProperties.load(new InputStreamReader(App.class.getResource("/text.properties").openStream(), Charset.forName("cp1251")));
-
-        System.out.println("textProperties.getProperty(\"start\") = " + textProperties.getProperty("start"));
+        textProperties.load(new InputStreamReader(Utils.loadResource("/text.properties"), Charset.forName("cp1251")));
 
         ApiContextInitializer.init();
         TelegramBotsApi api = new TelegramBotsApi();
