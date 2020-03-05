@@ -1,5 +1,6 @@
 package pvs.tgbot.example;
 
+import lombok.extern.log4j.Log4j2;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
@@ -13,11 +14,13 @@ import java.util.Properties;
  * @author v.peschaniy
  * Date: 27.02.2020
  */
+@Log4j2
 public class App {
 
-    public static void main(String[] args) throws IOException, TelegramApiRequestException {
+    private static final int VERSION = 12;
 
-        System.out.println("YulyaTelegramBot started 6");
+    public static void main(String[] args) throws IOException, TelegramApiRequestException {
+        log.info("YulyaTelegramBot started. Version: " + VERSION);
 
         Properties textProperties = new Properties();
         textProperties.load(new InputStreamReader(Utils.loadResource("/text.properties"), Charset.forName("cp1251")));

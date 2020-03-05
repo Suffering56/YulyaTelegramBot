@@ -1,6 +1,5 @@
 package pvs.tgbot.example;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 public class Utils {

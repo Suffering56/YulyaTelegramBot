@@ -3,9 +3,12 @@ package pvs.tgbot.example;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -15,6 +18,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.annotation.Nonnull;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static pvs.tgbot.example.Utils.loadResource;
@@ -23,6 +27,7 @@ import static pvs.tgbot.example.Utils.loadResource;
  * @author v.peschaniy
  * Date: 27.02.2020
  */
+@Log4j2
 public class YulyaTelegramBot extends TelegramLongPollingBot {
 
     private static final String BOT_USERNAME = "YulyaTelegramBot";
@@ -30,7 +35,7 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
 
     private final Properties textProperties;
     private final Map<String, String> buttonTextToKeyMap;
-    private final Map<Long, QuestProgress> progressMap = new HashMap<>();
+    private final Map<Long, QuestProgress> progressMap = new ConcurrentHashMap<>();
 
     YulyaTelegramBot(Properties textProperties) {
         this.textProperties = textProperties;
@@ -45,7 +50,8 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        System.out.println("onUpdateReceived");
+        log.info("onUpdateReceived");
+
         if (!update.hasMessage()) {
             return;
         }
@@ -56,37 +62,28 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
         long chatId = updateMessage.getChatId();
         QuestProgress progress = progressMap.computeIfAbsent(chatId, QuestProgress::new);
 
-        System.out.println("chatId = " + chatId);
-        System.out.println("inputText = " + inputText);
+        log.info("chatId = " + chatId);
+        log.info("inputText = " + inputText);
 
         String buttonKey = buttonTextToKeyMap.get(inputText);
         if (buttonKey != null) {
             handleButtonCommand(progress, buttonKey);
         } else {
-            switch (inputText) {
-                case "/start":
-                    sendAnswerTextMessage(chatId, "answer_start", "btn_goto_stage1", "btn_help");
-                    break;
-
-                case "/img":
-                    SendPhoto photo1 = new SendPhoto()
-                            .setChatId(chatId)
-                            .setPhoto("ed", loadResource("/img/ed_sheeran.png"));
-
-                    SendPhoto photo2 = new SendPhoto()
-                            .setChatId(chatId)
-                            .setPhoto("dog", loadResource("/img/some_dog.jpg"));
-
-                    sendPhotoUnsafe(photo1);
-                    sendPhotoUnsafe(photo2);
-
-                    break;
-                default:
-                    sendAnswerTextMessage(chatId, "answer_unknown");
-                    //TODO: randomSticker
-                    break;
-            }
+            sendAnswerTextMessage(chatId, "answer_unknown");
         }
+    }
+
+    private void sendSticker(long chatId, String stickerPath) {
+        SendSticker sticker = new SendSticker()
+                .setChatId(chatId)
+                .setSticker(new InputFile(loadResource(stickerPath), stickerPath));
+
+        sendStickerUnsafe(sticker);
+    }
+
+    @SneakyThrows
+    private void sendStickerUnsafe(SendSticker sticker) {
+        execute(sticker);
     }
 
     private void handleButtonCommand(QuestProgress progress, String buttonKey) {
@@ -97,6 +94,10 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
             // NAVIGATION
             case "btn_help":
                 sendAnswerTextMessage(chatId, "answer_help");
+                break;
+
+            case "btn_sticker":
+                sendSticker(chatId, "/img/yulya_sticker.png");
                 break;
 
             case "btn_restart":
@@ -118,9 +119,14 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
                 }
                 break;
 
+            //STAGE 0
+            case "btn_start":
+                progress.clean();
+                sendAnswerTextMessage(chatId, "answer_start", "btn_goto_stage1", "btn_help");
+                break;
             // STAGE 1
             case "btn_goto_stage1":
-                if (progress.getStage() > 1) {
+                if (progress.getStage() <= 1) {
                     progress.setStage(1);
                     sendAnswerTextMessage(chatId, "answer_goto_stage1", "btn_goto_stage2", "btn_stage1_help1", "btn_stage1_help2", "btn_stage1_help3");
                 } else {
@@ -130,6 +136,16 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
 
             case "btn_stage1_help1":
                 sendAnswerTextMessage(chatId, "answer_stage1_help1");
+                sleep(2000);
+
+                sendAnswerPhotoMessages(
+                        chatId,
+                        2000,
+                        "/img/shampoo/img1.jpg",
+                        "/img/shampoo/img2.jpg",
+                        "/img/shampoo/img3.jpg",
+                        "/img/shampoo/img4.jpg"
+                );
                 break;
 
             case "btn_stage1_help2":
@@ -174,6 +190,7 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
             case "btn_goto_stage7":
                 progress.setStage(7);
                 sendAnswerTextMessage(chatId, "answer_finishQuest", "btn_applyQuestReward", "btn_rerunQuest");
+                sendSticker(chatId, "/img/yulya_sticker.png");
                 break;
 
             // SKIP
@@ -204,6 +221,22 @@ public class YulyaTelegramBot extends TelegramLongPollingBot {
     @SneakyThrows
     private Message sendPhotoUnsafe(SendPhoto photo) {
         return execute(photo);
+    }
+
+    private void sendAnswerPhotoMessages(long chatId, long delay, String... images) {
+        for (String imgPath : images) {
+            SendPhoto photo = new SendPhoto()
+                    .setChatId(chatId)
+                    .setPhoto(imgPath, loadResource(imgPath));
+
+            sendPhotoUnsafe(photo);
+            sleep(delay);
+        }
+    }
+
+    @SneakyThrows
+    private void sleep(long delay) {
+        Thread.sleep(delay);
     }
 
     private void sendAnswerTextMessage(long chatId, @Nonnull String messageName, String... buttons) {
